@@ -20,24 +20,42 @@ namespace APICatalogo.Controllers
         [HttpGet]
         public ActionResult<IEnumerable<Produto>> Get()
         {
-            var produtos = _context.Produtos.ToList();
-            if (produtos is null)
+            try
             {
-                return NotFound("Produtos não encontrados.");
+                var produtos = _context.Produtos.ToList();
+                if (produtos is null)
+                {
+                    return NotFound();
+                }
+                return produtos;
             }
-            return produtos;
+            catch (Exception ex)
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                           "Ocorreu um problema ao tratar a sua solicitação.");
+            }
+
         }
 
 
         [HttpGet("{id}:int", Name = "ObterProduto")]
         public ActionResult<Produto> Get(int id)
         {
-            var produtos = _context.Produtos.FirstOrDefault(p => p.Id == id);
-            if (produtos is null)
+            try
             {
-                return NotFound("Produto não encontrado.");
+                var produto = _context.Produtos.FirstOrDefault(p => p.Id == id);
+                if (produto is null)
+                {
+                    return NotFound("Produto não encontrado...");
+                }
+                return produto;
+
             }
-            return produtos; 
+            catch (Exception ex) 
+            {
+                return StatusCode(StatusCodes.Status500InternalServerError,
+                           "Ocorreu um problema ao tratar a sua solicitação.");
+            }
         }
 
         [HttpPost]
