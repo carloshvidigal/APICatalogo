@@ -38,7 +38,7 @@ namespace APICatalogo.Controllers
         }
 
 
-        [HttpGet("{id}:int", Name = "ObterProduto")]
+        [HttpGet("{id:int}", Name = "ObterProduto")]
         public ActionResult<Produto> Get(int id)
         {
             try
