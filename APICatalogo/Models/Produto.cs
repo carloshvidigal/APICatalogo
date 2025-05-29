@@ -5,7 +5,7 @@ using System.Text.Json.Serialization;
 namespace APICatalogo.Models
 {
     [Table("Produtos")]
-    public class Produto
+    public class Produto : IValidatableObject
     {
         [Key]
         public int Id { get; set; }
@@ -33,5 +33,29 @@ namespace APICatalogo.Models
         [JsonIgnore]
         public Categoria? Categoria { get; set; }
 
+        public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+        {
+            if (!string.IsNullOrEmpty(this.Nome))
+            {
+                var primeiraLetra = this.Nome[0].ToString();
+                if (primeiraLetra != primeiraLetra.ToUpper())
+                {
+                    yield return new
+                        ValidationResult("A primeira letra do produto deve ser maiúscula",
+                        new[]
+                        { nameof(this.Nome) }
+                        );
+                }
+            }
+
+            if(this.Estoque <= 0)
+            {
+                yield return new
+                        ValidationResult("O estoque deve ser maior que zero",
+                        new[]
+                        { nameof(this.Estoque) }
+                        );
+            }
+        }
     }
 }
