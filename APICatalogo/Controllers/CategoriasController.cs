@@ -1,4 +1,5 @@
-﻿using APICatalogo.Context;
+﻿using System.Reflection.Metadata.Ecma335;
+using APICatalogo.Context;
 using APICatalogo.Models;
 using APICatalogo.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -12,11 +13,13 @@ namespace APICatalogo.Controllers
     {
         private readonly AppDbContext _context;
         private readonly IMeuServico _meuServico;
+        private readonly IConfiguration _configuration;
 
-        public CategoriasController(AppDbContext context, IMeuServico meuServico)
+        public CategoriasController(AppDbContext context, IMeuServico meuServico, IConfiguration configuration)
         {
             _context = context;
             _meuServico = meuServico;
+            _configuration = configuration;
         }
 
         // O sistema já é configurado para usar a anotação FromService como default
@@ -26,6 +29,16 @@ namespace APICatalogo.Controllers
             return meuServico.Saudacao(nome);
         }
 
+        [HttpGet("LerArquivoConfiguracao")]
+        public string GetValores()
+        {
+            var valor1 = _configuration["chave1"];
+            var valor2 = _configuration["chave2"];
+
+            var secao1 = _configuration["secao1:chave2"];
+
+            return $"Chave1 = {valor1} \nChave2 = {valor2} \nSeção1 => Chave2 = {secao1}";
+        }
 
         [HttpGet("produtos")]
         public async Task<ActionResult<IEnumerable<Categoria>>> GetCategoriasProdutos()
