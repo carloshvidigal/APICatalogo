@@ -1,5 +1,6 @@
 ﻿using System.Reflection.Metadata.Ecma335;
 using APICatalogo.Context;
+using APICatalogo.Filters;
 using APICatalogo.Models;
 using APICatalogo.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -14,12 +15,15 @@ namespace APICatalogo.Controllers
         private readonly AppDbContext _context;
         private readonly IMeuServico _meuServico;
         private readonly IConfiguration _configuration;
+        private readonly ILogger _logger;
 
-        public CategoriasController(AppDbContext context, IMeuServico meuServico, IConfiguration configuration)
+        public CategoriasController(AppDbContext context, IMeuServico meuServico, IConfiguration configuration, 
+            ILogger<CategoriasController> logger)
         {
             _context = context;
             _meuServico = meuServico;
             _configuration = configuration;
+            _logger = logger;
         }
 
         // O sistema já é configurado para usar a anotação FromService como default
@@ -43,6 +47,7 @@ namespace APICatalogo.Controllers
         [HttpGet("produtos")]
         public async Task<ActionResult<IEnumerable<Categoria>>> GetCategoriasProdutos()
         {
+            _logger.LogInformation("==================== GET api/categorias/produtos ====================");
             try
             {
                 return await _context.Categorias.Include(p => p.Produtos).ToListAsync();
@@ -56,6 +61,7 @@ namespace APICatalogo.Controllers
         }
 
         [HttpGet]
+        [ServiceFilter(typeof(ApiLoggingFilter))]
         public async Task<ActionResult<IEnumerable<Categoria>>> Get()
         {
             try
@@ -76,8 +82,12 @@ namespace APICatalogo.Controllers
             {
                 var categoria = _context.Categorias.FirstOrDefault(p => p.Id == id);
 
+                _logger.LogInformation($"==================== GET api/categorias/id = {id} ====================");
+
+
                 if (categoria == null)
                 {
+                    _logger.LogInformation($"==================== GET api/categorias/id {id} NOT FOUND ====================");
                     return NotFound($"Categoria com id= {id} não encontrada...");
                 }
                 return Ok(categoria);
