@@ -8,6 +8,11 @@ namespace APICatalogo.Repositories
     {
         private readonly AppDbContext _context;
 
+        public CategoriaRepository(AppDbContext context)
+        {
+            _context = context;
+        }
+
         public IEnumerable<Categoria> GetCategorias()
         {
             return _context.Categorias.ToList();
@@ -15,7 +20,7 @@ namespace APICatalogo.Repositories
 
         public Categoria GetCategoria(int id)
         {
-            return _context.Categorias.First(c => c.Id == id);
+            return _context.Categorias.FirstOrDefault(c => c.Id == id);
         }
 
         public Categoria Create(Categoria categoria)
