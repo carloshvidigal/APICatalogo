@@ -10,22 +10,22 @@ namespace APICatalogo.Controllers;
 [ApiController]
 public class ProdutosController : ControllerBase
 {
-    private readonly IProdutoRepository _produtoRepository;
-    private readonly IRepository<Produto> _repository; // como o repositorio específico - ProdutoRepository - herda do repositorio
-                                                       // genérico, poderia usar somente _produtoRepository pois ele contem todos 
-                                                       // os métodos do genérico e o métodos específicos
-                                                       // ou seja, todos métodos que foram usados nessa classe
+    private readonly IUnitOfWork _uof;
+    //private readonly IProdutoRepository _produtoRepository;
+    //private readonly IRepository<Produto> _repository;  // como o repositorio específico - ProdutoRepository - herda do repositorio
+                                                         // genérico, poderia usar somente _produtoRepository pois ele contem todos 
+                                                        // os métodos do genérico e o métodos específicos
+                                                       // ou seja, todos métodos que foram usados nessa class
 
-    public ProdutosController(IRepository<Produto> repository, IProdutoRepository produtoRepository)
+    public ProdutosController(IUnitOfWork uof)
     {
-        _repository = repository;
-        _produtoRepository = produtoRepository;
+        _uof = uof;
     }
 
     [HttpGet("produtos/{id}")]
     public ActionResult <IEnumerable<Produto>> GetProdutosCategoria(int id)
     {
-        var produtos = _produtoRepository.GetProdutosPorCategoria(id); 
+        var produtos = _uof.ProdutoRepository.GetProdutosPorCategoria(id); 
         
         if(produtos is null)
         {
@@ -38,7 +38,7 @@ public class ProdutosController : ControllerBase
     [HttpGet]
     public ActionResult<IEnumerable<Produto>> Get()
     {
-        var produtos = _repository.GetAll();
+        var produtos = _uof.ProdutoRepository.GetAll();
         if (produtos is null)
         {
             return NotFound();
@@ -49,7 +49,7 @@ public class ProdutosController : ControllerBase
     [HttpGet("{id}", Name = "ObterProduto")]
     public ActionResult<Produto> Get(int id)
     {
-        var produto = _repository.Get(c => c.Id == id);
+        var produto = _uof.ProdutoRepository.Get(c => c.Id == id);
 
         if (produto is null)
         {
@@ -64,7 +64,8 @@ public class ProdutosController : ControllerBase
         if (produto is null)
             return BadRequest();
 
-        var novoProduto = _repository.Create(produto);
+        var novoProduto = _uof.ProdutoRepository.Create(produto);
+        _uof.Commit();
 
         return new CreatedAtRouteResult("ObterProduto",
             new { id = novoProduto.Id }, novoProduto);
@@ -78,7 +79,8 @@ public class ProdutosController : ControllerBase
             return BadRequest(); //400
         }
 
-        var produtoAtualizado = _repository.Update(produto);
+        var produtoAtualizado = _uof.ProdutoRepository.Update(produto);
+        _uof.Commit();
 
         return Ok(produtoAtualizado);
     }
@@ -86,14 +88,16 @@ public class ProdutosController : ControllerBase
     [HttpDelete("{id:int}")]
     public ActionResult Delete(int id)
     {
-        var produto = _repository.Get(p => p.Id == id);
+        var produto = _uof.ProdutoRepository.Get(p => p.Id == id);
 
         if (produto is null)
         {
             return NotFound("Produto não encontrado...");
         }
 
-        var produtoDeletado = _repository.Delete(produto);
+        var produtoDeletado = _uof.ProdutoRepository.Delete(produto);
+        _uof.Commit();
+
         return Ok(produtoDeletado);
     }
 }
