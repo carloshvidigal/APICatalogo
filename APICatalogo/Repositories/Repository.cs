@@ -15,7 +15,7 @@ namespace APICatalogo.Repositories
 
         public IEnumerable<T> GetAll()
         {
-            return _context.Set<T>().ToList();
+            return _context.Set<T>().AsNoTracking().ToList();
         }
         public T? Get(Expression<Func<T, bool>> predicate)
         {
@@ -31,7 +31,7 @@ namespace APICatalogo.Repositories
         {
             _context.Set<T>().Update(entity);
             //_context.Entry(entity).State = EntityState.Modified;
-            _context.SaveChanges();
+            //_context.SaveChanges();
             return entity;
         }
         public T Delete(T entity)
