@@ -4,9 +4,9 @@ namespace APICatalogo.Repositories
 {
     public class UnitOfWork : IUnitOfWork
     {
-        private IProdutoRepository _produtoRepo;
+        private IProdutoRepository? _produtoRepo;
 
-        private ICategoriaRepository _categoriaRepo;
+        private ICategoriaRepository? _categoriaRepo;
 
         public AppDbContext _context;
 
