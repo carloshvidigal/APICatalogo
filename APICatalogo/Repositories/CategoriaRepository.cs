@@ -2,6 +2,7 @@
 using APICatalogo.Models;
 using APICatalogo.Pagination;
 using Microsoft.EntityFrameworkCore;
+using X.PagedList;
 
 namespace APICatalogo.Repositories
 {
@@ -11,26 +12,34 @@ namespace APICatalogo.Repositories
         {
         }
 
-        public PagedList<Categoria> GetCategorias(CategoriasParameters categoriasParameters)
+        public async Task<IPagedList<Categoria>> GetCategoriasAsync(CategoriasParameters categoriasParameters)
         {
-            var categorias = GetAll().OrderBy(p => p.Id).AsQueryable();
+            var categorias = await GetAllAsync();
 
-            var categoriasOrdenados = PagedList<Categoria>.ToPagedList(categorias, categoriasParameters.PageNumber, categoriasParameters.PageSize);
+            var categoriasOrdenadas = categorias.OrderBy(p => p.Id).AsQueryable();
 
-            return categoriasOrdenados;
+            //var resultado = PagedList<Categoria>.ToPagedList(categoriasOrdenadas, categoriasParameters.PageNumber, categoriasParameters.PageSize);
+
+            var resultado = await categoriasOrdenadas.ToPagedListAsync(categoriasParameters.PageNumber,
+                                                           categoriasParameters.PageSize);
+
+            return resultado;
         }
 
-        public PagedList<Categoria> GetCategoriasFiltroNome(CategoriasFiltroNome categoriasParams)
+        public async Task<IPagedList<Categoria>> GetCategoriasFiltroNomeAsync(CategoriasFiltroNome categoriasParameters)
         {
-            var categorias = GetAll().AsQueryable();
+            var categorias = await GetAllAsync();
 
-            if (!string.IsNullOrEmpty(categoriasParams.Nome))
+            if (!string.IsNullOrEmpty(categoriasParameters.Nome))
             {
-                categorias = categorias.Where(c => c.Nome.Contains(categoriasParams.Nome));
+                categorias = categorias.Where(c => c.Nome.Contains(categoriasParameters.Nome));
             }
 
-            var categoriasFiltradas = PagedList<Categoria>.ToPagedList(categorias, categoriasParams.PageNumber, categoriasParams.PageSize);
+            // var categoriasFiltradas = PagedList<Categoria>.ToPagedList(categorias.AsQueryable(), categoriasParams.PageNumber, categoriasParams.PageSize);
 
+            var categoriasFiltradas = await categorias.ToPagedListAsync(categoriasParameters.PageNumber,
+                                                           categoriasParameters.PageSize);
+            
             return categoriasFiltradas;
         }
     }
