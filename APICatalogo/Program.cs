@@ -26,6 +26,22 @@ builder.Services.AddControllers(options =>
     options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
 }).AddNewtonsoftJson();
 
+var OrigensComAcessoPermitido = "_origensComAcessoPermitido";
+
+builder.Services.AddCors(options =>
+    options.AddPolicy(OrigensComAcessoPermitido,
+   //options.AddDefaultPolicy(
+   policy =>
+   {
+      // policy.WithOrigins("https://localhost:7226")
+      //                    .AllowAnyHeader()
+      //                    .WithMethods("GET", "POST");
+      //                   .AllowCredentials();
+       policy.AllowAnyOrigin();
+   })
+);
+
+
 
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -134,12 +150,18 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+    app.UseDeveloperExceptionPage();
 }
 
 app.UseHttpsRedirection();
+app.UseStaticFiles();
+app.UseRouting();
 
+app.UseCors(OrigensComAcessoPermitido);
+
+app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapControllers();
 
+app.MapControllers();
 app.Run();
