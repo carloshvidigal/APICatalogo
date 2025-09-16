@@ -12,12 +12,14 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using X.PagedList;
+using Microsoft.AspNetCore.Http;
 
 namespace APICatalogo.Controllers;
 
 [Route("[controller]")]
 [ApiController]
-//[EnableRateLimiting("fixedwindow")]
+[EnableRateLimiting("fixedwindow")]
+[Produces("application/json")]
 public class CategoriasController : ControllerBase
 {
     private readonly IUnitOfWork _uof;
@@ -28,10 +30,16 @@ public class CategoriasController : ControllerBase
         _logger = logger;
         _uof = uof;
     }
-
+    /// <summary>
+    /// Obtem uma lista de objetos Categoria
+    /// </summary>
+    /// <returns>Uma lista de objetos Categoria</returns>
    // [Authorize]
     [HttpGet]
     [DisableRateLimiting]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
+    [ProducesDefaultResponseType]
     public async Task<ActionResult<IEnumerable<CategoriaDTO>>> Get()
     {
         var categorias = await _uof.CategoriaRepository.GetAllAsync();
@@ -82,7 +90,15 @@ public class CategoriasController : ControllerBase
         return Ok(categoriasDTO);
     }
 
+    /// <summary>
+    /// Obtem uma categoria pelo seu ID 
+    /// </summary>
+    /// <param name="id"></param>
+    /// <returns>Objetos Categoria</returns>
     [HttpGet("{id:int}", Name = "ObterCategoria")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+
     public async Task<ActionResult<CategoriaDTO>> Get(int id)
     {
         var categoria = await _uof.CategoriaRepository.GetAsync(c => c.Id == id);
@@ -99,6 +115,23 @@ public class CategoriasController : ControllerBase
         return Ok(categoriaDTO);
     }
 
+    /// <summary>
+    /// Inclui uma nova Categoria
+    /// </summary>
+    /// <remarks>
+    /// Exemplo de Request:
+    /// 
+    ///    POST api/categorias
+    ///    {
+    ///        "categoriaId": 1,
+    ///        "nome": "categoria",
+    ///        "imagemURL": "http://teste.net/1.jpg"
+    ///    }   
+    /// </remarks>
+    /// <param name="categoriaDTO">objeto Categoria</param>
+    /// <returns>O objeto Categoria incluída</returns>
+    /// <remarks>Retorna um objeto Categoria incluído</remarks>
+    /// 
     [HttpPost]
     public async Task<ActionResult<CategoriaDTO>> Post(CategoriaDTO categoriaDTO)
     {
@@ -119,6 +152,7 @@ public class CategoriasController : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Put))]
     public async Task<ActionResult<CategoriaDTO>> Put(int id, CategoriaDTO categoriaDTO)
     {
         if (id != categoriaDTO.Id)
@@ -139,6 +173,9 @@ public class CategoriasController : ControllerBase
 
     [HttpDelete("{id:int}")]
     [Authorize(Policy = "AdminOnly")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
+    [ProducesDefaultResponseType]
     public async Task<ActionResult<CategoriaDTO>> Delete(int id)
     {
         var categoria = await _uof.CategoriaRepository.GetAsync(c => c.Id == id);

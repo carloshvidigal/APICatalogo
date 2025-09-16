@@ -13,6 +13,7 @@ namespace APICatalogo.Controllers;
 
 [Route("[controller]")]
 [ApiController]
+[ApiConventionType(typeof(DefaultApiConventions))]
 public class ProdutosController : ControllerBase
 {
     private readonly IUnitOfWork _uof;
@@ -81,6 +82,10 @@ public class ProdutosController : ControllerBase
         return Ok(produtosDTO);
     }
 
+    /// <summary>
+    /// Exibe uma relação de produtos
+    /// </summary>
+    /// <returns>Retorna uma lista de objetos Produto</returns>
     [HttpGet]
     [Authorize(Policy = "UserOnly")]
     public async Task<ActionResult<IEnumerable<ProdutoDTO>>> Get()
@@ -96,6 +101,11 @@ public class ProdutosController : ControllerBase
         return Ok(produtosDTO);
     }
 
+    /// <summary>
+    /// Obtem produto pelo seu identificador Id
+    /// </summary>
+    /// <param name="id">Código do produto</param>
+    /// <returns>Um objeto Produto</returns>
     [HttpGet("{id}", Name = "ObterProduto")]
     public async Task<ActionResult<ProdutoDTO>> Get(int id)
     {
