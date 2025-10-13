@@ -90,15 +90,20 @@ public class ProdutosController : ControllerBase
     [Authorize(Policy = "UserOnly")]
     public async Task<ActionResult<IEnumerable<ProdutoDTO>>> Get()
     {
-        var produtos = await _uof.ProdutoRepository.GetAllAsync();
-        if (produtos is null)
+        try
         {
-            return NotFound();
+            var produtos = await _uof.ProdutoRepository.GetAllAsync();
+
+            if (produtos is null)
+                return NotFound();
+
+            var produtosDto = _mapper.Map<IEnumerable<ProdutoDTO>>(produtos);
+            return Ok(produtosDto);
         }
-
-        var produtosDTO = _mapper.Map<IEnumerable<ProdutoDTO>>(produtos);
-
-        return Ok(produtosDTO);
+        catch (Exception)
+        {
+            return BadRequest();
+        }
     }
 
     /// <summary>
@@ -109,6 +114,11 @@ public class ProdutosController : ControllerBase
     [HttpGet("{id}", Name = "ObterProduto")]
     public async Task<ActionResult<ProdutoDTO>> Get(int id)
     {
+        if (id == null || id <= 0)
+        {
+            return BadRequest("ID de produto inválido");
+        }
+
         var produto = await _uof.ProdutoRepository.GetAsync(c => c.Id == id);
 
         if (produto is null)
