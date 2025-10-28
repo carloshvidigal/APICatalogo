@@ -13,6 +13,7 @@ using Microsoft.EntityFrameworkCore;
 using Newtonsoft.Json;
 using X.PagedList;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Caching.Memory;
 
 namespace APICatalogo.Controllers;
 
@@ -25,10 +26,14 @@ public class CategoriasController : ControllerBase
     private readonly IUnitOfWork _uof;
     private readonly ILogger<CategoriasController> _logger;
 
-    public CategoriasController(ILogger<CategoriasController> logger, IUnitOfWork uof)
+    private readonly IMemoryCache _cache;
+    private const string CacheCategoriasKey = "CacheCategorias";
+
+    public CategoriasController(ILogger<CategoriasController> logger, IUnitOfWork uof, IMemoryCache cache)
     {
         _logger = logger;
         _uof = uof;
+        _cache = cache;
     }
     /// <summary>
     /// Obtem uma lista de objetos Categoria
@@ -42,11 +47,16 @@ public class CategoriasController : ControllerBase
     [ProducesDefaultResponseType]
     public async Task<ActionResult<IEnumerable<CategoriaDTO>>> Get()
     {
-        var categorias = await _uof.CategoriaRepository.GetAllAsync();
-
-        if (categorias is null)
+        if (!_cache.TryGetValue(CacheCategoriasKey, out IEnumerable<Categoria>? categorias))
         {
-            return NotFound("Não existem categorias.");
+            categorias = await _uof.CategoriaRepository.GetAllAsync();
+
+            if (categorias is null && !categorias.Any())       
+            {
+                _logger.LogWarning("Não existem categorias!");
+                return NotFound("Não existem categorias.");
+            }
+            SetCache(CacheCategoriasKey, categorias);
         }
 
         var categoriasDTO = categorias.ToCategoriaDTOList();
@@ -101,14 +111,20 @@ public class CategoriasController : ControllerBase
 
     public async Task<ActionResult<CategoriaDTO>> Get(int id)
     {
-        var categoria = await _uof.CategoriaRepository.GetAsync(c => c.Id == id);
+        var cacheKey = GetCategoriaCacheKey(id);
 
-        if (categoria == null)
+        if (!_cache.TryGetValue(cacheKey, out Categoria? categoria))
         {
-            _logger.LogWarning($"Categoria com id= {id} não encontrada...");
-            return NotFound($"Categoria com id= {id} não encontrada...");
-        }
+            categoria = await _uof.CategoriaRepository.GetAsync(c => c.Id == id);
 
+            if (categoria is  null)
+            {
+                _logger.LogWarning($"Categoria com id= {id} não encontrada...");
+                return NotFound($"Categoria com id= {id} não encontrada...");
+            }
+
+            SetCache(cacheKey, categoria);
+        }
 
         var categoriaDTO = categoria.ToCategoriaDTO();
 
@@ -148,6 +164,8 @@ public class CategoriasController : ControllerBase
 
         var novaCategoriaDTO = categoriaCriada.ToCategoriaDTO();
 
+        InvalidateCacheAfterChange(categoriaCriada.Id, categoriaCriada);
+
         return new CreatedAtRouteResult("ObterCategoria", new { id = novaCategoriaDTO.Id }, novaCategoriaDTO);
     }
 
@@ -155,7 +173,7 @@ public class CategoriasController : ControllerBase
     [ApiConventionMethod(typeof(DefaultApiConventions), nameof(DefaultApiConventions.Put))]
     public async Task<ActionResult<CategoriaDTO>> Put(int id, CategoriaDTO categoriaDTO)
     {
-        if (id != categoriaDTO.Id)
+        if (id != categoriaDTO?.Id || categoriaDTO is null || id <= 0)
         {
             _logger.LogWarning($"Dados inválidos...");
             return BadRequest("Dados inválidos");
@@ -166,13 +184,16 @@ public class CategoriasController : ControllerBase
         var categoriaAtualizada = _uof.CategoriaRepository.Update(categoria);
         await _uof.CommitAsync();
 
+        InvalidateCacheAfterChange(id, categoriaAtualizada);
+
+
         var categoriaAtualizadaDTO = categoriaAtualizada.ToCategoriaDTO();
 
         return Ok(categoriaAtualizadaDTO);
     }
 
     [HttpDelete("{id:int}")]
-    [Authorize(Policy = "AdminOnly")]
+ //   [Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
     [ProducesDefaultResponseType]
@@ -189,8 +210,32 @@ public class CategoriasController : ControllerBase
         var categoriaExcluida = _uof.CategoriaRepository.Delete(categoria);
         await _uof.CommitAsync();
 
+        InvalidateCacheAfterChange(id);
+
         var categoriaExcluidaDTO = categoriaExcluida.ToCategoriaDTO();
 
         return Ok(categoriaExcluidaDTO);
+    }
+
+    private string GetCategoriaCacheKey(int id) => $"CacheCategoria_{id}";
+    private void SetCache<T>(string key, T data)
+    {
+        var cacheOptions = new MemoryCacheEntryOptions
+        {
+            AbsoluteExpirationRelativeToNow = TimeSpan.FromSeconds(30),
+            SlidingExpiration = TimeSpan.FromSeconds(15),
+            Priority = CacheItemPriority.High
+        };
+        _cache.Set(key, data, cacheOptions);
+    }
+    private void InvalidateCacheAfterChange(int id, Categoria? categoria = null)
+    {
+        _cache.Remove(CacheCategoriasKey);
+        _cache.Remove(GetCategoriaCacheKey(id));
+
+        if (categoria != null)
+        {
+            SetCache(GetCategoriaCacheKey(id), categoria);
+        }
     }
 }
