@@ -193,7 +193,7 @@ public class CategoriasController : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
- //   [Authorize(Policy = "AdminOnly")]
+    [Authorize(Policy = "AdminOnly")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
     [ProducesDefaultResponseType]
